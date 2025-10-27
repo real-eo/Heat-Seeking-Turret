@@ -1,0 +1,79 @@
+#include <Wire.h>
+
+#define APDS9151_ADDR  0x52  // I2C address of the APDS-9151
+#define MAIN_CTRL      0x00  // Main control register
+#define LS_MEAS_RATE   0x04  // Light sensor measurement rate
+#define LS_GAIN        0x05  // Light sensor gain
+#define STATUS_REG     0x07  // Status register (check if data is ready)
+#define LS_GREEN_0     0x0D  // Green LSB
+#define LS_GREEN_1     0x0E  // Green MID
+#define LS_GREEN_2     0x0F  // Green MSB
+#define LS_BLUE_0      0x10  // Blue LSB
+#define LS_BLUE_1      0x11  // Blue MID
+#define LS_BLUE_2      0x12  // Blue MSB
+#define LS_RED_0       0x13  // Red LSB
+#define LS_RED_1       0x14  // Red MID
+#define LS_RED_2       0x15  // Red MSB
+
+void setup() {
+    Serial.begin(115200);
+    Wire.begin();  // Start I2C communication
+
+    // Enable ALS (Ambient Light Sensor)
+    writeRegister(MAIN_CTRL, 0x02);  // Bit 1 enables LS
+
+    // Set measurement rate (default: 100ms, 18-bit resolution)
+    writeRegister(LS_MEAS_RATE, 0x22);
+
+    // Set gain (default 1x)
+    writeRegister(LS_GAIN, 0x01);
+    
+    Serial.println("APDS-9151-DS Initialized.");
+}
+
+void loop() {
+    if (readRegister(STATUS_REG) & 0x20) {  // Check if LS data is ready
+        uint32_t green = read24(LS_GREEN_0);
+        uint32_t blue  = read24(LS_BLUE_0);
+        uint32_t red   = read24(LS_RED_0);
+
+        Serial.print("Red: "); Serial.print(red);
+        Serial.print(" Green: "); Serial.print(green);
+        Serial.print(" Blue: "); Serial.println(blue);
+    }
+    
+    delay(50);  // Wait before next reading
+}
+
+// Function to write a value to a register
+void writeRegister(uint8_t reg, uint8_t value) {
+    Wire.beginTransmission(APDS9151_ADDR);
+    Wire.write(reg);
+    Wire.write(value);
+    Wire.endTransmission();
+}
+
+// Function to read a single-byte register
+uint8_t readRegister(uint8_t reg) {
+    Wire.beginTransmission(APDS9151_ADDR);
+    Wire.write(reg);
+    Wire.endTransmission(false);
+    
+    Wire.requestFrom(APDS9151_ADDR, 1);
+    return Wire.available() ? Wire.read() : 0;
+}
+
+// Function to read a 24-bit register (3 bytes)
+uint32_t read24(uint8_t reg) {
+    Wire.beginTransmission(APDS9151_ADDR);
+    Wire.write(reg);
+    Wire.endTransmission(false);
+    
+    Wire.requestFrom(APDS9151_ADDR, 3);
+    if (Wire.available() < 3) return 0;
+
+    uint32_t data = Wire.read();
+    data |= (Wire.read() << 8);
+    data |= (Wire.read() << 16);
+    return data;
+}

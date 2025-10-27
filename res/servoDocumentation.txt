@@ -1,0 +1,20 @@
+- [Calling] ------
+The Servo.write(int) function is non-blocking and does
+NOT require to be called continiously until completion
+
+
+
+- [Rotation] -----
+SERVO MODE:
+  -1  =   0°    ( 500 μs)
+   0  =  90°    (1500 μs)
+   1  = 180°    (2500 μs)
+
+CONTINIOUS MODE:
+  0.0 =   0°    ( 500 μs)
+  0.5 =  90°    (1500 μs)
+  1.0 = 180°    (2500 μs)
+
+  NB! only rvalues <200 are treated as angles (deg°) 
+      in the Servo.write(int) function. Anything >=200 
+      is treated as μs!

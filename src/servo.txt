@@ -1,0 +1,56 @@
+#include <Servo.h>
+
+
+#define Y_SERVO_PIN 9
+
+Servo yServo;
+
+/*
+
+- [Calling] ------
+The Servo.write(int) function is non-blocking and does
+NOT require to be called continiously until completion
+
+
+- [Rotation] -----
+SERVO MODE:
+  -1  =   0°    ( 500 μs)
+   0  =  90°    (1500 μs)
+   1  = 180°    (2500 μs)
+
+CONTINIOUS MODE:
+  0.0 =   0°    ( 500 μs)
+  0.5 =  90°    (1500 μs)
+  1.0 = 180°    (2500 μs)
+
+  NB! only rvalues <200 are treated as angles (deg°) 
+      in the Servo.write(int) function. Anything >=200 
+      is treated as μs!
+
+*/
+
+int yTarget;
+
+void setup() {
+  Serial.begin(115200);
+
+  yServo.attach(Y_SERVO_PIN);    // Attach servo on digital pin 9
+
+  yTarget = 0;
+}
+
+void loop() {
+  int yPosition = yServo.read();
+
+  yServo.write(yTarget%180);
+  
+  Serial.print("yServo : ");
+  Serial.print(yPosition);
+  Serial.print(" (T: ");
+  Serial.print(yTarget);
+  Serial.println(")");
+
+  delay(100);
+
+  yTarget += 2;
+}

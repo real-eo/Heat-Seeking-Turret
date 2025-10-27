@@ -1,0 +1,62 @@
+float cubicInterpolate(float p[4], const float& x) {
+    // p: A list or array of values that are used for interpolation. In cubicInterpolate, it is a list of four values. In bicubicInterpolate, it is a 4x4 matrix of values.
+    // x: The fractional distance along the x-axis for interpolation.
+    
+    return p[1] + 0.5 * x * (p[2] - p[0] + x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3] + x * (3.0 * (p[1] - p[2]) + p[3] - p[0])));
+}
+
+
+float bicubicInterpolate(float p[4][4], const float& x, const float& y) {
+    // p: A list or array of values that are used for interpolation. In cubicInterpolate, it is a list of four values. In bicubicInterpolate, it is a 4x4 matrix of values.
+    // x: The fractional distance along the x-axis for interpolation.
+    // y: The fractional distance along the y-axis for interpolation (used only in bicubicInterpolate).
+    
+    float array[4] = {
+        cubicInterpolate(p[0], y),
+        cubicInterpolate(p[1], y),
+        cubicInterpolate(p[2], y),
+        cubicInterpolate(p[3], y)
+    };
+
+    return cubicInterpolate(array, x);
+}
+
+void interpolate(const float* matrix) {
+    const int scaleFactor = 1;
+
+    const int gridSize = BASE_SIZE * scaleFactor;
+    const int matrixSize = gridSize * gridSize;
+
+    float interpolatedMatrix[gridSize][gridSize];
+
+    for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+            float x = (float)j / (scaleFactor) - 0.5;
+            float y = (float)i / (scaleFactor) - 0.5;
+
+            int x0 = (int)x;
+            int y0 = (int)y;
+
+            float p[4][4];
+            for (int m = 0; m < 4; m++) {
+                for (int n = 0; n < 4; n++) {
+                    p[m][n] = matrix[(y0 + m) * BASE_SIZE + x0 + n];
+                }
+            }
+
+            float interpolatedValue = bicubicInterpolate(p, x - x0, y - y0);
+            if (isnan(interpolatedValue) || isinf(interpolatedValue)) {
+                Serial.print("Overflow detected at (");
+                Serial.print(i);
+                Serial.print(", ");
+                Serial.print(j);
+                Serial.println(")");
+            }
+            interpolatedMatrix[i][j] = interpolatedValue;
+            
+            // Serial.print(interpolatedMatrix[i][j]);
+            // Serial.print(", ");
+        }
+        // Serial.println();
+    }
+}

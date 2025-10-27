@@ -1,0 +1,51 @@
+#include <algorithm>
+#include <cmath>
+
+// Helper function to perform cubic interpolation
+float cubicInterpolate(float p[4], float x) {
+    return p[1] + 0.5 * x * (p[2] - p[0] + x * (2.0 * p[0] - 5.0 * p[1] + 4.0 * p[2] - p[3] + x * (3.0 * (p[1] - p[2]) + p[3] - p[0])));
+}
+
+// Helper function to perform bicubic interpolation
+float bicubicInterpolate(float p[4][4], float x, float y) {
+    float arr[4];
+    arr[0] = cubicInterpolate(p[0], y);
+    arr[1] = cubicInterpolate(p[1], y);
+    arr[2] = cubicInterpolate(p[2], y);
+    arr[3] = cubicInterpolate(p[3], y);
+    return cubicInterpolate(arr, x);
+}
+
+// Function to upscale an 8x8 matrix to a 64x64 matrix using bicubic interpolation
+void bicubicInterpolationUpscale(const float* input, float* output) {
+    for (int i = 0; i < 64; i++) {
+        for (int j = 0; j < 64; j++) {
+            float x = (i / 8.0) - 0.5;
+            float y = (j / 8.0) - 0.5;
+            int x_int = std::floor(x);
+            int y_int = std::floor(y);
+            float x_frac = x - x_int;
+            float y_frac = y - y_int;
+
+            float p[4][4];
+            for (int m = -1; m <= 2; m++) {
+                for (int n = -1; n <= 2; n++) {
+                    int xm = std::min(std::max(x_int + m, 0), 7);
+                    int yn = std::min(std::max(y_int + n, 0), 7);
+                    p[m + 1][n + 1] = input[xm * 8 + yn];
+                }
+            }
+
+            output[i * 64 + j] = bicubicInterpolate(p, x_frac, y_frac);
+        }
+    }
+}
+
+int main() {
+    float pixels[64];
+    float upscaledMatrix[4096];
+
+    bicubicInterpolationUpscale(pixels, upscaledMatrix);
+
+    return 0;
+}

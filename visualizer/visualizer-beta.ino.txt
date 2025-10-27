@@ -1,0 +1,179 @@
+#include <math.h>
+
+struct coordinate {
+    int x; 
+    int y;
+    int index;
+
+    int angularDistanceToXYplane() {
+        return atan2(y, x);
+    }
+};
+
+float RAW_MATRIX[64] = {
+    17.50, 17.75, 17.75, 17.25, 17.00, 18.25, 18.75, 18.25, 
+    17.75, 18.00, 17.25, 17.75, 18.25, 18.25, 18.50, 19.00, 
+    18.00, 17.50, 17.00, 17.75, 18.00, 18.00, 19.25, 20.50, 
+    18.00, 18.25, 17.50, 17.75, 19.25, 20.75, 21.00, 22.25, 
+    18.75, 18.75, 18.50, 18.50, 22.25, 21.50, 22.75, 23.25, 
+    19.50, 20.75, 20.75, 21.50, 21.75, 20.75, 22.00, 23.75, 
+    21.25, 22.50, 24.25, 23.50, 20.75, 20.00, 21.50, 22.50, 
+    22.50, 21.75, 22.25, 21.50, 21.50, 21.50, 21.50, 21.75,   
+};
+
+const unsigned char BASE_SIZE = 8;
+const unsigned char SCALE_FACTOR = 2;
+
+const unsigned char CAMERA_FOV = 60;
+
+const float SEVENTH = 8.57;     // 1/7th of the camera's FOV
+const float EIGHTH = 7.5;       // 1/8th of the camera's FOV 
+
+
+
+void setup() { Serial.begin(115200); }
+
+void loop() {
+    int pixels[BASE_SIZE * BASE_SIZE];
+
+    floatToIntMatrixCast(RAW_MATRIX, BASE_SIZE*BASE_SIZE, pixels);
+
+    int heatMatrix[BASE_SIZE * SCALE_FACTOR * BASE_SIZE * SCALE_FACTOR];
+
+    interpolate(pixels, heatMatrix);
+
+    coordinate target = locateTarget(heatMatrix, BASE_SIZE*SCALE_FACTOR);
+
+    Serial.print("Target: (");
+    Serial.print(target.x);
+    Serial.print(", ");
+    Serial.print(target.y);
+    Serial.print(") [");
+    Serial.print(target.index);
+    Serial.println("]");
+
+    // delay(5000);
+
+    // ! Don't forget to free the memory, otherwise it will turbo rape the arduino's RAM
+    delete[] heatMatrix;
+    
+}
+
+template <typename T>
+void displayTempratureMatrix(const T matrix[], int gridSize) {    
+    // Debugging function to display the temperature matrix
+    Serial.println("Temperature data:");
+    
+    for (int i = 0; i < gridSize*gridSize; i++) {
+        Serial.print(matrix[i]);
+        Serial.print(", ");
+        if ((i + 1) % gridSize == 0) Serial.println();
+    }
+    
+    Serial.println();
+}
+
+void floatToIntMatrixCast(const float floatMatrix[], const int& size, int intMatrix[]) {
+    for (int i = 0; i < size; i++) {
+        intMatrix[i] = static_cast<int>(floatMatrix[i] * 100);
+    }
+}
+
+
+int cubicInterpolate(int p[4], const float& x) {
+    // p: A list or array of values that are used for interpolation. In cubicInterpolate, it is a list of four values. In bicubicInterpolate, it is a 4x4 matrix of values.
+    // x: The fractional distance along the x-axis for interpolation.
+
+    // Perform cubic interpolation on a 1D array of 4 values
+    // The coefficients are derived from the cubic Hermite spline interpolation formula
+    
+    return static_cast<int>(p[1] + 0.5 * x * (p[2] - p[0] + x * (2 * p[0] - 5 * p[1] + 4 * p[2] - p[3] + x * (3 * (p[1] - p[2]) + p[3] - p[0]))));
+}
+
+
+int bicubicInterpolate(int p[4][4], const float& x, const float& y) {
+    // p: A list or array of values that are used for interpolation. In cubicInterpolate, it is a list of four values. In bicubicInterpolate, it is a 4x4 matrix of values.
+    // x: The fractional distance along the x-axis for interpolation.
+    // y: The fractional distance along the y-axis for interpolation (used only in bicubicInterpolate).
+    
+    // Perform cubic interpolation along the rows
+    int array[4] = {
+        cubicInterpolate(p[0], y),
+        cubicInterpolate(p[1], y),
+        cubicInterpolate(p[2], y),
+        cubicInterpolate(p[3], y)
+    };
+
+    // Perform cubic interpolation along the columns
+    return cubicInterpolate(array, x);
+}
+
+
+void interpolate(const int matrix[], int* interpolatedMatrix) {
+    const int gridSize = BASE_SIZE * SCALE_FACTOR;
+    const int matrixSize = gridSize * gridSize;
+
+    for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+            // Find the x and y values on the input matrix corresponding to the current point (i, j) on the output matrix
+            float x = (float)i / (SCALE_FACTOR) - 0.5;
+            float y = (float)j / (SCALE_FACTOR) - 0.5;
+            
+            // Get the integer and fractional parts of the x and y values
+            int x0 = int(x);
+            int y0 = int(y);
+            float dx = x - x0;
+            float dy = y - y0;
+
+            int p[4][4];
+            for (int m = 0; m < 4; m++) {
+                for (int n = 0; n < 4; n++) {
+                    // Ensure that we don't go out of bounds when accessing the input matrix
+                    int xm = min(max(x0 + m - 1, 0), BASE_SIZE - 1);
+                    int yn = min(max(y0 + n - 1, 0), BASE_SIZE - 1);
+
+                    // Get the values of the 16 points from the input matrix and store them in the 4x4 grid 
+                    p[m][n] = matrix[xm * BASE_SIZE + yn];
+                }
+            }
+
+            // Interpolate the value at the fractional position (x_frac, y_frac) using bicubic interpolation,
+            // and store the interpolated value in the output matrix at position (i, j)
+            interpolatedMatrix[i * gridSize + j] = bicubicInterpolate(p, dx, dy);
+            
+        }
+    }
+
+    // displayTempratureMatrix<int>(interpolatedMatrix, gridSize);
+
+    // ? DEPRECATED: Changed so that the function instead alters an existing array passed by reference
+    // // return interpolatedMatrix;
+}
+
+
+coordinate locateTarget(const int matrix[], const int& gridSize) {
+    int matrixSize = gridSize * gridSize;
+
+    // Find the maximum value in the interpolated matrix
+    int val = matrix[0];
+    int pos = 0;
+
+    for (int i = 1; i < matrixSize; i++) {
+        if (matrix[i] > val) {
+            val = matrix[i];
+            pos = i;
+        }
+    }
+
+    // Convert the 1D position to 2D coordinates
+    int x = pos % gridSize;
+    int y = pos / gridSize;
+
+    int offset = gridSize >> 1;
+
+    return {x - offset, -(y - offset + 1), pos};      // Return the coordinates of the maximum value
+}
+
+void seek() {
+
+}

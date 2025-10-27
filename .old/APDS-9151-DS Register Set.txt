@@ -1,0 +1,41 @@
+Register Set
+The APDS-9151 is controlled and monitored by data registers and command registers accessed through the serial interface. These
+registers provide for a variety of control functions and can be read to determine results of the ADC conversions.
+Address Type Name Description Reset Value
+00HEX RW MAIN_CTRL Operation mode control, SW reset 00HEX
+01HEX RW PS_LED PS LED settings 36HEX
+02HEX RW PS_PULSES PS number of LED pulses 08HEX
+03HEX RW PS_MEAS_RATE PS measurement rate in active mode 05HEX
+04HEX RW LS_MEAS_RATE LS measurement rate and resolution 22HEX
+05HEX RW LS_Gain LS analog gain range 01HEX
+06HEX R PART_ID Part number ID and revision ID C2HEX
+07HEX R MAIN_STATUS Power-on status, interrupt status, data status 20HEX
+08HEX R PS_DATA_0 PS measurement data, least significant bit 00HEX
+09HEX R PS_DATA_1 PS measurement data, most significant bit, and overflow 00HEX
+0AHEX R LS_DATA_IR_0 IR ADC measurement data, LSB 00HEX
+0BHEX R LS_DATA_IR_1 IR ADC measurement data 00HEX
+0CHEX R LS_DATA_IR_2 IR ADC measurement data, MSB 00HEX
+0DHEX R LS_DATA_GREEN_0 ALS/Green ADC measurement data, LSB 00HEX
+0EHEX R LS_DATA_GREEN_1 ALS/Green ADC measurement data 00HEX
+0FHEX R LS_DATA_GREEN_2 ALS/Green ADC measurement data, MSB 00HEX
+10HEX R LS_DATA_BLUE_0 Blue ADC measurement data, LSB 00HEX
+11HEX R LS_DATA_BLUE_1 Blue ADC measurement data 00HEX
+12HEX R LS_DATA_BLUE_2 Blue ADC measurement data, MSB 00HEX
+13HEX R LS_DATA_RED_0 RED ADC measurement data, LSB 00HEX
+14HEX R LS_DATA_RED_1 RED ADC measurement data 00HEX
+15HEX R LS_DATA_RED_2 RED ADC measurement data, MSB 00HEX
+19HEX RW INT_CFG Interrupt configuration 10HEX
+1AHEX RW INT_PST Interrupt persist setting 00HEX
+1BHEX RW PS_THRES_UP_0 PS interrupt upper threshold, LSB FFHEX
+1CHEX RW PS_THRES_UP_1 PS interrupt upper threshold, MSB 07HEX
+1DHEX RW PS_THRES_LOW_0 PS interrupt lower threshold, LSB 00HEX
+1EHEX RW PS_THRES_LOW_1 PS interrupt lower threshold, MSB 00HEX
+1FHEX RW PS_CAN_0 PS intelligent cancellation level setting, LSB 00HEX
+20HEX RW PS_CAN_1, PS_CAN_ANA PS intelligent cancellation level setting, MSB 00HEX
+21HEX RW LS_THRES_UP_0 LS Interrupt upper threshold, LSB FFHEX
+22HEX RW LS_THRES_UP_1 LS Interrupt upper threshold FFHEX
+23HEX RW LS_THRES_UP_2 LS Interrupt upper threshold, MSB 0FHEX
+24HEX RW LS_THRES_LOW_0 LS Interrupt lower threshold, LSB 00HEX
+25HEX RW LS_THRES_LOW_1 LS Interrupt lower threshold 00HEX
+26HEX RW LS_THRES_LOW_2 LS Interrupt lower threshold, MSB 00HEX
+27HEX RW LS_THRES_VAR LS Interrupt variance threshold 00HEX
