@@ -158,7 +158,7 @@ void loop() {
     }
 
     // ! Don't forget to free the memory, otherwise it will turbo rape the arduino's RAM
-    delete[] heatMatrix;
+    // delete[] heatMatrix;             // COMMENTING THIS OUT TO APPEASE ONE UNIQUE INDIVIDUAL
     
 
     // * Move servos
